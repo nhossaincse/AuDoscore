@@ -34,8 +34,8 @@ lib/junitpoints.jar: $(SRCJUNITPOINTSJAR)
 
 -include var.mk
 MAKEDIR=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-PUBLICTESTSOURCE = $(PUBLICTEST:=.java)
-SECRETTESTSOURCE = $(SECRETTEST:=.java)
+PUBLICTEST=$(basename $(PUBLICTESTSOURCE))# remove suffix (e.g. ".java"/".scala")
+SECRETTEST=$(basename $(SECRETTESTSOURCE))# remove suffix (e.g. ".java"/".scala")
 
 SHELL=/bin/sh
 ifneq ("$(wildcard /bin/dash)","")
@@ -46,14 +46,14 @@ compile-stage0:
 	javac $(COMPILER_ARGS) -Xprefer:source -sourcepath $(interfacesDirName) $(sutDirName)/*.java
 
 compile-stage1: miniclean compile-stage0
-	javac $(COMPILER_ARGS) -Xprefer:source -sourcepath $(interfacesDirName) $(cleanroomDirName)/*.java
-	javac $(COMPILER_ARGS) -Xprefer:source -sourcepath $(interfacesDirName):$(junitDirName):$(sutDirName) -cp $(LIBALL) $(junitDirName)/$(PUBLICTESTSOURCE)
+	javac $(COMPILER_ARGS) -Xprefer:source -sourcepath $(junitDirName):$(interfacesDirName):$(sutDirName) -cp $(LIBALL) $(junitDirName)/$(PUBLICTESTSOURCE)
 	java -cp $(LIBALL):$(junitDirName):$(interfacesDirName):$(sutDirName) tester.tools.CheckAnnotation $(PUBLICTEST)
 	java -cp $(LIBALL) tester.tools.ForbiddenUseSearcher $(PUBLICTEST) > forbidden.out
 	if [ -s forbidden.out ]; then \
 		cat forbidden.out 1>&2 ; \
 		exit 1 ; \
 	fi
+	javac $(COMPILER_ARGS) -Xprefer:source -sourcepath $(interfacesDirName) $(cleanroomDirName)/*.java
 	make run-comparer
 
 compile-stage2: miniclean compile-stage1
@@ -62,15 +62,14 @@ compile-stage2: miniclean compile-stage1
 	set -e ; \
 	if [ "x$(SECRETTEST)" != "x" ]; then \
 		make compile-stage2-secret ; \
-		java -cp $(LIBALL):$(junitDirName):$(interfacesDirName):$(sutDirName) -Dpub=$(PUBLICTEST) tester.tools.CheckAnnotation $(SECRETTEST) ; \
-		echo "echo \",\" 1>&2" >> single_execution.sh;	\
-		java -cp $(LIBALL):$(junitDirName) tester.tools.SingleExecutionPreparer "$(LIBALL):$(interfacesDirName):$(junitDirName):$(sutDirName)" "-Djson=yes -Dpub=$(PUBLICTEST)" $(SECRETTEST) >> single_execution.sh; \
-	fi ; \
+		echo "echo \",\" 1>&2" >> single_execution.sh ; \
+		java -cp $(LIBALL):$(junitDirName) tester.tools.SingleExecutionPreparer "$(LIBALL):$(junitDirName):$(interfacesDirName):$(sutDirName)" "-Djson=yes -Dpub=$(PUBLICTEST)" $(SECRETTEST) >> single_execution.sh ; \
+	fi
 	echo "echo \"]\" 1>&2" >> loop.sh
 
 compile-stage2-secret:
-	javac $(COMPILER_ARGS) -Xprefer:source -sourcepath $(interfacesDirName) $(cleanroomDirName)/*.java
-	javac $(COMPILER_ARGS) -Xprefer:source -sourcepath $(interfacesDirName):$(junitDirName):$(sutDirName) -cp $(LIBALL) $(junitDirName)/$(SECRETTESTSOURCE)
+	javac $(COMPILER_ARGS) -Xprefer:source -sourcepath $(junitDirName):$(interfacesDirName):$(sutDirName) -cp $(LIBALL) $(junitDirName)/$(SECRETTESTSOURCE)
+	java -cp $(LIBALL):$(junitDirName):$(interfacesDirName):$(sutDirName) -Dpub=$(PUBLICTEST) tester.tools.CheckAnnotation $(SECRETTEST)
 	java -cp $(LIBALL) tester.tools.ReplaceManager $(SECRETTEST)
 	java -cp $(LIBALL) tester.tools.ReplaceManager --loop $(PUBLICTEST) $(SECRETTEST) >> loop.sh
 
@@ -86,7 +85,7 @@ run-stage0:
 
 run-stage1:
 	java -XX:-OmitStackTraceInFastThrow -Xmx1024m \
-		-cp $(LIBALL):$(interfacesDirName):$(junitDirName):$(sutDirName) \
+		-cp $(LIBALL):$(junitDirName):$(interfacesDirName):$(sutDirName) \
 		-Djson=yes org.junit.runner.JUnitCore $(PUBLICTEST) || echo
 
 run-stage2:
@@ -102,26 +101,26 @@ run: run-stage$(STAGE)
 
 
 help:
-	@echo '==========================================================='
-	@echo 'Welcome to AuDoscore - The Grading System for Java Homework'
-	@echo '-----------------------------------------------------------'
+	@echo '=========================================================================='
+	@echo 'Welcome to AuDoscore/ScExFuSS - The Grading System for Java/Scala Homework'
+	@echo '--------------------------------------------------------------------------'
 	@echo 'This Makefile serves different purposes, but it is NOT used directly for the grading itself.'
 	@echo 'Running test cases for grading is done through the test.sh shell script (see README for details).'
-	@echo '-----------------------------------------------------------'
+	@echo '--------------------------------------------------------------------------'
 	@echo 'Developers/Users use this Makefile from the project root folder to make:'
 	@echo '- build:  freshly build the main library'
 	@echo '- verify: run all provided tests from the tests folder'
 	@echo '- clean:  remove all generated artifacts (including the main library!)'
-	@echo '-----------------------------------------------------------'
+	@echo '--------------------------------------------------------------------------'
 	@echo 'Testers use this Makefile from one of the provided test folders to make:'
 	@echo '- test_run:     run the test in the current folder (keeping temporary execution folder)'
 	@echo '- test_verify:  run and compare results of current test against its historical execution'
 	@echo '- test_REBUILD: run and update historical execution of current test to its new results'
 	@echo '- test_clean:   remove temporary execution folder (i.e. generated artifacts)'
-	@echo '-----------------------------------------------------------'
+	@echo '--------------------------------------------------------------------------'
 	@echo 'All other make targets are used by the test.sh shell script and should not be called directly.'
 	@echo 'Enjoy!'
-	@echo '==========================================================='
+	@echo '=========================================================================='
 
 
 test_run:

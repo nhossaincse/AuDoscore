@@ -170,7 +170,7 @@ public class PointsMerger {
 			}
 			double localScore = getLocalPoint((Boolean) usedResult.get("success"), (String) usedResult.get("id"), (Boolean) usedResult.get("fromSecret"));
 			localPoints += localScore;
-			localSummary += ((Boolean) usedResult.get("success")) ? "✓" : "✗";
+			localSummary += ((Boolean) usedResult.get("success")) ? "\u2713" : "\u2717";
 			localSummary += String.format(" %1$6.2f", localScore) + " | ";
 			localSummary += (String) usedResult.get("desc");
 			Object error = usedResult.get("error");

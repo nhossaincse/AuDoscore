@@ -1,5 +1,6 @@
+make[1]: Verzeichnis „/audoscore/tests/new_language_features_16_records/test.224684“ wird betreten
 java -XX:-OmitStackTraceInFastThrow -Xmx1024m \
-	-cp lib/junitpoints.jar:lib/junit.jar:lib/hamcrest-core.jar:lib/json-simple-1.1.1.jar:interfaces:junit:student \
+	-cp lib/junitpoints.jar:lib/junit.jar:lib/hamcrest-core.jar:lib/json-simple-1.1.1.jar:junit:interfaces:student \
 	-Djson=yes org.junit.runner.JUnitCore PublicTest || echo
 JUnit version 4.13.2
 .E.E.E
@@ -28,4 +29,5 @@ FAILURES!!!
 Tests run: 3,  Failures: 3
 
 
+make[1]: Verzeichnis „/audoscore/tests/new_language_features_16_records/test.224684“ wird verlassen
 {"exercises":[{"name":"Lambda","tests":[{"desc":"PublicTest \"regular\": Should fail in \"vanilla\" because without @Replace.","error":"AssertionError(Should fail in \"vanilla\" because without @Replace. expected:<708> but was:<-624>)","fromSecret":false,"id":"pubTest_regular","success":false},{"desc":"PublicTest \"member\": Should fail in \"vanilla\" because without @Replace.","error":"AssertionError(Should fail in \"vanilla\" because without @Replace. expected:<708> but was:<10958>)","fromSecret":false,"id":"pubTest_member","success":false},{"desc":"PublicTest \"member_anonymous_inner\": Should fail in \"vanilla\" because without @Replace.","error":"AssertionError(Should fail in \"vanilla\" because without @Replace. expected:<708> but was:<84>)","fromSecret":false,"id":"pubTest_member_anonymous_inner","success":false}]}]}

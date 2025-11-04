@@ -66,39 +66,26 @@ function checkTestFiles {
 	ex1=$(grep '@*Exercises' $file1)
 	ex2=$(grep '@*Exercises' $file2)
 	# identify test files
-	secTestFile=
 	pubTestFile=
-	## one file should have the @SecretClass annotation
-	if [ "x${secret1}" == "x" ] && [ "x${secret2}" == "x" ]; then
-		err "WARNING - Found no SecretClass annotation in both test files"
-		cleanExit
-	fi
-	## check if @SecretClass is present in both files
+	secTestFile=
 	if [ "x${secret1}" != "x" ] && [ "x${secret2}" != "x" ]; then
-		err "WARNING - Found SecretClass annotation in both test files: $file1 $file2"
+		err "ERROR - Found @SecretClass in BOTH test files"
 		cleanExit
-	elif [ "x${ex1}" != "x" ] && [ "x${ex2}" != "x" ]; then
-		if [ "x${secret1}" != "x" ]; then
-			# file1 is secretTest ignoring @Exercises annotation in secretTest
-			secTestFile=$(basename $file1 ".java")
-			pubTestFile=$(basename $file2 ".java")
+	elif [ "x${secret1}" != "x" ]; then
+		pubTestFile=$(basename $file2)
+		secTestFile=$(basename $file1)
+		if [ "x${ex1}" != "x" ] && [ "x${ex2}" != "x" ]; then
 			err "WARNING - @Exercises specified in $file1 (SecretTest) -- ignoring"
-		elif [ "x${secret2}" != "x" ]; then
-			# file2 is secretTest ignoring @Exercises annotation in secretTest
-			secTestFile=$(basename $file2 ".java")
-			pubTestFile=$(basename $file1 ".java")
+		fi
+	elif [ "x${secret2}" != "x" ]; then
+		pubTestFile=$(basename $file1)
+		secTestFile=$(basename $file2)
+		if [ "x${ex1}" != "x" ] && [ "x${ex2}" != "x" ]; then
 			err "WARNING - @Exercises specified in $file2 (SecretTest) -- ignoring"
 		fi
 	else
-		if [ "x${secret1}" != "x" ]; then
-			# file1 is secretTest
-			secTestFile=$(basename $file1 ".java")
-			pubTestFile=$(basename $file2 ".java")
-		elif [ "x${secret2}" != "x" ]; then
-			# file2 is secretTest
-			secTestFile=$(basename $file2 ".java")
-			pubTestFile=$(basename $file1 ".java")
-		fi
+		err "ERROR - Found NO @SecretClass in both test files"
+		cleanExit
 	fi
 }
 
@@ -162,7 +149,7 @@ function scanJunit {
 		done
 		file_count=$(ls -1 $junitDirName| grep -v ^1 | wc -l)
 		if [ "${file_count}" == "1" ]; then
-			pubTestFile=$(basename ${files[0]} ".java")
+			pubTestFile=$(basename ${files[0]})
 		elif [ "${file_count}" == "2" ]; then
 			checkTestFiles ${files[0]} ${files[1]}
 		else
@@ -220,14 +207,12 @@ function testIt {
 	${scriptDir}/tools/install.sh > /dev/null 2> /dev/null || die "failed"
 
 	info "- write var.mk"
-	echo "interfacesDirName = ${interfacesDirName}" > var.mk
-	echo "cleanroomDirName = ${cleanroomDirName}" >> var.mk
-	echo "junitDirName = ${junitDirName}" >> var.mk
-	echo "sutDirName = ${sutDirName}" >> var.mk
-	echo "STUDENTSOURCE = ${studentSource}" >> var.mk
-	echo "INTERFACES = ${interfaces}" >> var.mk
-	echo "PUBLICTEST = ${pubTestFile}" >> var.mk
-	echo "SECRETTEST = ${secTestFile}" >> var.mk
+	echo "interfacesDirName=${interfacesDirName}" > var.mk
+	echo "cleanroomDirName=${cleanroomDirName}" >> var.mk
+	echo "junitDirName=${junitDirName}" >> var.mk
+	echo "sutDirName=${sutDirName}" >> var.mk
+	echo "PUBLICTESTSOURCE=${pubTestFile}" >> var.mk
+	echo "SECRETTESTSOURCE=${secTestFile}" >> var.mk
 
 	if [ "x${interfaces}" != "x" ]; then
 		info "copy interfaces"
@@ -248,7 +233,8 @@ function testIt {
 	info "\nstage0 (compile interfaces and SUT only)"
 	info "- compiling"
 	( make compile-stage0 ) > comp0 2>&1
-	checkExit $? "\nstudent result: ☠\n" comp0
+	ec=$?
+	checkExit $ec "\nstudent result: ☠\n" comp0
 
 	info "\ncopy cleanroom"
 	mkdir "$testDir"/"$cleanroomDirName" || die "failed to create test sub-dir $testDir/$cleanroomDirName"
@@ -259,9 +245,9 @@ function testIt {
 	info "copy junit tests"
 	mkdir "$testDir"/"$junitDirName" || die "failed to create test sub-dir $testDir/$junitDirName"
 	pushd ../"$junitDirName" > /dev/null || die "failed"
-	cp ${pubTestFile}.java "${testDir}"/"$junitDirName"/ || die "failed"
+	cp ${pubTestFile} "${testDir}"/"$junitDirName"/ || die "failed"
 	if [ "x$secTestFile" != "x" ]; then
-		cp ${secTestFile}.java "${testDir}"/"$junitDirName"/ || die "failed"
+		cp ${secTestFile} "${testDir}"/"$junitDirName"/ || die "failed"
 	fi
 	popd > /dev/null
 
@@ -296,10 +282,7 @@ function testIt {
 	info "- testing"
 	( make run-stage2 ) > run2.out 2> run2.err
 	ec=$?
-	if grep -q "java.lang.NoSuchFieldError:" "run2.out"; then
-		checkExit 1 "\ninternal error\n" run2.out
-	fi
-	if [ $? -ne 0 ]; then
+	if [ $ec -ne 0 ]; then
 		err "failed, stdout:"
 		cat run2.out
 		err "failed, stderr:"
@@ -311,10 +294,12 @@ function testIt {
 	cat run2.err
 
 	info "- merging"
+	PUBLICTEST=${pubTestFile%.*} # remove suffix (e.g. ".java"/".scala")
 	if [ "x$secTestFile" != "x" ]; then
-		( java -cp $LIBALL:$interfacesDirName:$junitDirName:$sutDirName $replace_error -Dpub=$pubTestFile -Dsecret=$secTestFile tester.tools.PointsMerger run2.err merged ) > merge 2>&1
+		SECRETTEST=${secTestFile%.*} # remove suffix (e.g. ".java"/".scala")
+		( java -cp $LIBALL:$junitDirName:$interfacesDirName:$sutDirName $replace_error -Dpub=$PUBLICTEST -Dsecret=$SECRETTEST tester.tools.PointsMerger run2.err merged ) > merge 2>&1
 	else
-		( java -cp $LIBALL:$interfacesDirName:$junitDirName:$sutDirName $replace_error -Dpub=$pubTestFile tester.tools.PointsMerger run2.err merged ) > merge 2>&1
+		( java -cp $LIBALL:$junitDirName:$interfacesDirName:$sutDirName $replace_error -Dpub=$PUBLICTEST tester.tools.PointsMerger run2.err merged ) > merge 2>&1
 	fi
 	checkExit $? "\ninternal error\n" merge
 	cat merged
@@ -345,12 +330,12 @@ interfaces=""
 scanInterfaces
 
 info "scanning junit"
-secTestFile=""
 pubTestFile=""
+secTestFile=""
 scanJunit
 
 # info "scanning skeleton"
-# nothing TODO
+# nothing to do
 
 if [ "$#" -eq 0 ]; then
 	info "scanning system under test (SUT) - collecting automatically"

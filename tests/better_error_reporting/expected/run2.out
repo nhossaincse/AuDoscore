@@ -1,9 +1,10 @@
+make[1]: Verzeichnis „/audoscore/tests/better_error_reporting/test.214918“ wird betreten
 echo "{ \"vanilla\" : " 1>&2
 echo "[" 1>&2
 /bin/dash ./single_execution.sh
-make[1]: Verzeichnis „/audoscore/tests/better_error_reporting/test.217109“ wird betreten
+make[2]: Verzeichnis „/audoscore/tests/better_error_reporting/test.214918“ wird betreten
 java -XX:-OmitStackTraceInFastThrow -Xmx1024m \
-	-cp lib/junitpoints.jar:lib/junit.jar:lib/hamcrest-core.jar:lib/json-simple-1.1.1.jar:interfaces:junit:student \
+	-cp lib/junitpoints.jar:lib/junit.jar:lib/hamcrest-core.jar:lib/json-simple-1.1.1.jar:junit:interfaces:student \
 	-Djson=yes org.junit.runner.JUnitCore UnitTest || echo
 JUnit version 4.13.2
 .
@@ -11,7 +12,7 @@ Time: xxx
 
 OK (1 test)
 
-make[1]: Verzeichnis „/audoscore/tests/better_error_reporting/test.217109“ wird verlassen
+make[2]: Verzeichnis „/audoscore/tests/better_error_reporting/test.214918“ wird verlassen
 .E
 Time: xxx
 There was 1 failure:
@@ -40,3 +41,4 @@ FAILURES!!!
 Tests run: 1,  Failures: 1
 
 echo "}" 1>&2
+make[1]: Verzeichnis „/audoscore/tests/better_error_reporting/test.214918“ wird verlassen

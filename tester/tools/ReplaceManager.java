@@ -16,7 +16,7 @@ public class ReplaceManager {
 
 	// usage:
 	// 1) ReplaceManager <secret test class>
-	// 2) ReplaceManager --loop -p <public test class> <secret test class>
+	// 2) ReplaceManager --loop <public test class> <secret test class>
 	static void main(String[] args) throws Exception {
 		if (args.length < 1) {
 			System.err.println("missing argument: secret test class name or option --loop");
