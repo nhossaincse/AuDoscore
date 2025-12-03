@@ -1,12 +1,24 @@
-sudo: required
-dist: trixie
+language: java
+
+# Use a supported Ubuntu image
+dist: jammy
+
+# You probably only need one JDK; keep the one you actually want
+jdk:
+  - openjdk21
+
+# Make sure we have the required tools for verify.sh
 addons:
   apt:
+    update: true
     packages:
       - bc
       - parallel
-language: java
-jdk:
-  - openjdk25
-  - oraclejdk25
-script: make verify
+
+# Extra safety: explicitly install in case addons are ignored
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y bc parallel
+
+script:
+  - make verify
