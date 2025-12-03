@@ -9,4 +9,4 @@ language: java
 jdk:
   - openjdk25
   - oraclejdk25
-script: make verify 
+script: make verify
