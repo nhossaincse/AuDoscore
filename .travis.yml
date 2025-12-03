@@ -1,13 +1,10 @@
 language: java
 
-# Use a supported Ubuntu image
 dist: jammy
 
-# You probably only need one JDK; keep the one you actually want
 jdk:
-  - openjdk21
+  - openjdk25
 
-# Make sure we have the required tools for verify.sh
 addons:
   apt:
     update: true
@@ -15,7 +12,6 @@ addons:
       - bc
       - parallel
 
-# Extra safety: explicitly install in case addons are ignored
 before_install:
   - sudo apt-get update
   - sudo apt-get install -y bc parallel
