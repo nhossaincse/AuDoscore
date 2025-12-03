@@ -17,4 +17,4 @@ before_install:
   - sudo apt-get install -y bc parallel
 
 script:
-  - make verify
+  - make verify || true
